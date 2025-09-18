@@ -15,6 +15,14 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Path mapping */
+    "baseUrl": ".",
+    "paths": {
+      "@scorer/schema": ["../../packages/schema/src"],
+      "@scorer/rules-netball": ["../../packages/rules-netball/src"],
+      "@scorer/ui": ["../../packages/ui/src"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

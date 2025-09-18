@@ -1,5 +1,5 @@
 import initSqlJs from 'sql.js';
-import { MatchEvent } from '@scorer/schema';
+import type { MatchEvent } from '@scorer/schema';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let db: any = null;

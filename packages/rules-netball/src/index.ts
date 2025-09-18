@@ -1,4 +1,4 @@
-import { GoalScoredEvent, MatchEvent, RuleTemplate } from '@scorer/schema';
+import type { GoalScoredEvent, MatchEvent, RuleTemplate } from '@scorer/schema';
 
 type ValidationResult = {
   ok: boolean;

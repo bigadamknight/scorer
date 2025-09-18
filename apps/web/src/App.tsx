@@ -296,7 +296,7 @@ export default function App() {
                 Game Type
               </label>
               <div className="space-y-2">
-                {ruleTemplates.map((template, idx) => (
+                {ruleTemplates.map((template: RuleTemplate, idx: number) => (
                   <button
                     key={template.id}
                     className={`w-full px-4 py-3 rounded-lg font-medium transition-colors ${
