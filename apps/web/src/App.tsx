@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ruleTemplates, validateGoalEvent } from '@scorer/rules-netball';
-import {
+import type {
   GoalScoredEvent,
   MatchEvent,
   PeriodTransitionEvent,
@@ -172,7 +172,7 @@ export default function App() {
   }, [matchState]);
 
   const handleRemoveLastGoal = useCallback(() => {
-    const lastGoalIndex = matchState.events.findLastIndex(e => e.type === 'goal_scored');
+    const lastGoalIndex = matchState.events.findLastIndex((e: MatchEvent) => e.type === 'goal_scored');
     if (lastGoalIndex === -1) return;
 
     const lastGoal = matchState.events[lastGoalIndex] as GoalScoredEvent;
