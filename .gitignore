@@ -1,0 +1,9 @@
+node_modules/
+.yarn/
+.yarnrc.yml
+*.log
+dist/
+.expo/
+web-build/
+.DS_Store
+.env

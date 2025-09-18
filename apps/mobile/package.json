@@ -1,0 +1,32 @@
+{
+  "name": "@scorer/mobile",
+  "private": true,
+  "version": "0.1.0",
+  "main": "expo/AppEntry.js",
+  "scripts": {
+    "dev": "expo start --dev-client",
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "lint": "eslint .",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@scorer/rules-netball": "^0.1.0",
+    "@scorer/schema": "^0.1.0",
+    "@scorer/ui": "^0.1.0",
+    "expo": "~54.0.0",
+    "expo-status-bar": "~3.0.8",
+    "react": "19.1.0",
+    "react-native": "0.81.4",
+    "react-native-gesture-handler": "~2.28.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.4",
+    "@types/react": "19.1.13",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "typescript": "^5.4.0"
+  }
+}
