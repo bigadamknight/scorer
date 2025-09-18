@@ -1,6 +1,7 @@
 import initSqlJs from 'sql.js';
 import { MatchEvent } from '@scorer/schema';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let db: any = null;
 
 export async function initDatabase() {
@@ -99,6 +100,7 @@ export function getMatchEvents(matchId: string): MatchEvent[] {
     events.push({
       eventId: row.id as string,
       matchId: row.match_id as string,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type: row.type as any,
       payload: JSON.parse(row.payload as string),
       sequence: row.sequence as number,
@@ -141,6 +143,7 @@ export function exportDatabase(): Uint8Array {
 }
 
 export function importDatabase(data: Uint8Array) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const SQL = (window as any).SQL;
   if (!SQL) throw new Error('SQL.js not loaded');
 
