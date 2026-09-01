@@ -1,0 +1,13 @@
+{
+  "name": "@scorer/api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal backend for the deployed Netball Scorer web app: access-code auth and match report email/archive.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
