@@ -10,6 +10,13 @@ export type EventType =
   | 'gain'
   | 'turnover'
   | 'penalty'
+  | 'feed'
+  | 'goal_assist'
+  | 'cp_receive'
+  | 'intercept'
+  | 'deflection'
+  | 'pickup'
+  | 'rebound'
   | 'undo';
 
 export interface MatchEvent {
@@ -33,6 +40,7 @@ export interface MatchConfig {
   periodMinutes: number;
   firstCentrePass: Team;
   shooters: { home: string[]; away: string[] };
+  players?: { home: string[]; away: string[] };
 }
 
 export interface MatchSummary {
@@ -47,15 +55,15 @@ export interface Match extends MatchSummary {
   events: MatchEvent[];
 }
 
+// Turnover breakdown and penalty kinds follow the Champion Data categories used
+// in Netball Super League match statistics.
 export const TURNOVER_REASONS = [
   'Bad pass',
+  'Bad hands',
   'Held ball',
-  'Footwork',
   'Offside',
-  'Contact',
-  'Obstruction',
+  'CP break',
   'Intercepted',
-  'Break',
 ] as const;
 
-export const PENALTY_KINDS = ['Contact', 'Obstruction', 'Footwork', 'Offside'] as const;
+export const PENALTY_KINDS = ['Contact', 'Obstruction'] as const;

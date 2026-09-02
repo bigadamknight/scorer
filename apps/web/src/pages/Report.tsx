@@ -3,7 +3,22 @@ import { Link, useParams } from 'react-router-dom';
 import { useMatchSync } from '../hooks/useMatchSync';
 import { api } from '../lib/api';
 import { buildReportText } from '../lib/report';
+import { derivedGains, STAT_LABELS, type CountStat } from '../lib/derive';
 import type { Team } from '../lib/types';
+
+const COUNT_ORDER: CountStat[] = [
+  'feed',
+  'goalAssist',
+  'cpReceive',
+  'intercept',
+  'deflectionGain',
+  'deflectionNoGain',
+  'pickup',
+  'reboundDef',
+  'reboundOff',
+  'turnover',
+  'penalty',
+];
 
 const pct = (n: number, d: number) => (d === 0 ? '—' : `${Math.round((n / d) * 100)}%`);
 
@@ -75,7 +90,11 @@ export function ReportPage() {
         const shooters = Object.entries(s.shots);
         const cp = Object.entries(s.cpByPeriod);
         const tot = cp.reduce((a, [, q]) => ({ conv: a.conv + q.conv, total: a.total + q.total }), { conv: 0, total: 0 });
-        if (shooters.length === 0 && cp.length === 0 && s.gains === 0 && s.turnovers === 0) return null;
+        const anyCounts = COUNT_ORDER.some((k) => s.counts[k] > 0);
+        const playersWithStats = Object.entries(s.players).filter(
+          ([n, rec]) => n !== 'Team' && COUNT_ORDER.some((k) => (rec[k] ?? 0) > 0)
+        );
+        if (shooters.length === 0 && cp.length === 0 && !anyCounts && s.manualGains === 0) return null;
         return (
           <section key={team} className="mt-6 rounded-md border border-hairline bg-surface p-4">
             <h2 className="font-display text-xl font-bold uppercase">{c[team]}</h2>
@@ -110,21 +129,44 @@ export function ReportPage() {
                 </div>
               </div>
             )}
-            {(s.gains > 0 || s.turnovers > 0) && (
-              <div className="mt-3 flex justify-between text-sm">
-                <span>Gains {s.gains}</span>
-                <span>
-                  Turnovers {s.turnovers}
-                  {Object.keys(s.turnoverReasons).length > 0 &&
-                    ` (${Object.entries(s.turnoverReasons)
-                      .map(([r, n]) => `${r} ${n}`)
-                      .join(', ')})`}
-                </span>
+            {(anyCounts || s.manualGains > 0) && (
+              <div className="mt-3">
+                <h3 className="label">Team stats</h3>
+                <div className="flex justify-between border-b border-hairline py-1.5 text-sm font-bold">
+                  <span>Gains</span>
+                  <span className="tabular-nums">{derivedGains(s)}</span>
+                </div>
+                {COUNT_ORDER.filter((k) => s.counts[k] > 0).map((k) => (
+                  <div key={k} className="flex justify-between border-b border-hairline py-1.5 text-sm">
+                    <span>{STAT_LABELS[k]}</span>
+                    <span className="tabular-nums">{s.counts[k]}</span>
+                  </div>
+                ))}
+                {Object.keys(s.turnoverReasons).length > 0 && (
+                  <div className="mt-1 text-xs text-faint">
+                    Turnovers: {Object.entries(s.turnoverReasons).map(([r, n]) => `${r} ${n}`).join(', ')}
+                  </div>
+                )}
+                {Object.keys(s.penalties).length > 0 && (
+                  <div className="mt-1 text-xs text-faint">
+                    Penalties: {Object.entries(s.penalties).map(([k, n]) => `${k} ${n}`).join(', ')}
+                  </div>
+                )}
               </div>
             )}
-            {Object.keys(s.penalties).length > 0 && (
-              <div className="mt-1 text-sm text-faint">
-                Penalties: {Object.entries(s.penalties).map(([k, n]) => `${k} ${n}`).join(', ')}
+            {playersWithStats.length > 0 && (
+              <div className="mt-3">
+                <h3 className="label">By player</h3>
+                {playersWithStats.map(([name, rec]) => (
+                  <div key={name} className="border-b border-hairline py-1.5 text-sm">
+                    <span className="font-bold">{name}</span>{' '}
+                    <span className="text-faint">
+                      {COUNT_ORDER.filter((k) => (rec[k] ?? 0) > 0)
+                        .map((k) => `${STAT_LABELS[k]} ${rec[k]}`)
+                        .join(' · ')}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </section>

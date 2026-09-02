@@ -86,7 +86,21 @@ const describe = (e: MatchEvent, match: Match): string => {
     case 'turnover':
       return `Turnover (${String(p.reason)}) — ${team}`;
     case 'penalty':
-      return `Penalty (${String(p.kind)}) — ${team}`;
+      return `Penalty (${String(p.kind)})${p.player ? ` — ${String(p.player)}` : ''} (${team})`;
+    case 'feed':
+      return `Feed${p.player ? ` — ${String(p.player)}` : ''} (${team})`;
+    case 'goal_assist':
+      return `Goal assist${p.player ? ` — ${String(p.player)}` : ''} (${team})`;
+    case 'cp_receive':
+      return `CP receive${p.player ? ` — ${String(p.player)}` : ''} (${team})`;
+    case 'intercept':
+      return `Intercept${p.player ? ` — ${String(p.player)}` : ''} (${team})`;
+    case 'deflection':
+      return `Deflection ${p.gain ? 'with gain' : 'no gain'}${p.player ? ` — ${String(p.player)}` : ''} (${team})`;
+    case 'pickup':
+      return `Pickup${p.player ? ` — ${String(p.player)}` : ''} (${team})`;
+    case 'rebound':
+      return `Rebound (${p.kind === 'off' ? 'att.' : 'def.'})${p.player ? ` — ${String(p.player)}` : ''} (${team})`;
     default:
       return e.type;
   }

@@ -1,13 +1,47 @@
 import type { Match, MatchEvent, Team } from './types';
 
+// Countable per-player/team stats beyond shooting, following the Champion Data
+// category set: attacking involvement, defensive gains, errors, penalties.
+export type CountStat =
+  | 'feed'
+  | 'goalAssist'
+  | 'cpReceive'
+  | 'intercept'
+  | 'deflectionGain'
+  | 'deflectionNoGain'
+  | 'pickup'
+  | 'reboundOff'
+  | 'reboundDef'
+  | 'turnover'
+  | 'penalty';
+
 export interface TeamStats {
   shots: Record<string, { made: number; att: number }>;
   cpByPeriod: Record<number, { conv: number; total: number }>;
-  gains: number;
-  turnovers: number;
+  counts: Record<CountStat, number>;
+  // per-player attribution — 'Team' collects unattributed taps
+  players: Record<string, Partial<Record<CountStat, number>>>;
+  manualGains: number;
   turnoverReasons: Record<string, number>;
   penalties: Record<string, number>;
 }
+
+export const STAT_LABELS: Record<CountStat, string> = {
+  feed: 'Feeds',
+  goalAssist: 'Goal assists',
+  cpReceive: 'CP receives',
+  intercept: 'Intercepts',
+  deflectionGain: 'Deflections (gain)',
+  deflectionNoGain: 'Deflections (no gain)',
+  pickup: 'Pickups',
+  reboundOff: 'Rebounds (att.)',
+  reboundDef: 'Rebounds (def.)',
+  turnover: 'Turnovers',
+  penalty: 'Penalties',
+};
+
+export const derivedGains = (s: TeamStats): number =>
+  s.counts.intercept + s.counts.deflectionGain + s.counts.pickup + s.manualGains;
 
 export interface DerivedState {
   score: Record<Team, number>;
@@ -20,14 +54,36 @@ export interface DerivedState {
   live: MatchEvent[];
 }
 
+const emptyCounts = (): Record<CountStat, number> => ({
+  feed: 0,
+  goalAssist: 0,
+  cpReceive: 0,
+  intercept: 0,
+  deflectionGain: 0,
+  deflectionNoGain: 0,
+  pickup: 0,
+  reboundOff: 0,
+  reboundDef: 0,
+  turnover: 0,
+  penalty: 0,
+});
+
 const emptyTeamStats = (): TeamStats => ({
   shots: {},
   cpByPeriod: {},
-  gains: 0,
-  turnovers: 0,
+  counts: emptyCounts(),
+  players: {},
+  manualGains: 0,
   turnoverReasons: {},
   penalties: {},
 });
+
+function bump(ts: TeamStats, payload: Record<string, unknown>, stat: CountStat) {
+  ts.counts[stat] += 1;
+  const player = typeof payload['player'] === 'string' && payload['player'] ? String(payload['player']) : 'Team';
+  const rec = (ts.players[player] ??= {});
+  rec[stat] = (rec[stat] ?? 0) + 1;
+}
 
 export function derive(match: Match): DerivedState {
   const undone = new Set<number>();
@@ -85,19 +141,41 @@ export function derive(match: Match): DerivedState {
         break;
       }
       case 'gain':
-        stats[team].gains += 1;
+        stats[team].manualGains += 1;
         break;
       case 'turnover': {
-        stats[team].turnovers += 1;
+        bump(stats[team], p, 'turnover');
         const r = String(p['reason'] ?? 'Other');
         stats[team].turnoverReasons[r] = (stats[team].turnoverReasons[r] ?? 0) + 1;
         break;
       }
       case 'penalty': {
+        bump(stats[team], p, 'penalty');
         const k = String(p['kind'] ?? 'Other');
         stats[team].penalties[k] = (stats[team].penalties[k] ?? 0) + 1;
         break;
       }
+      case 'feed':
+        bump(stats[team], p, 'feed');
+        break;
+      case 'goal_assist':
+        bump(stats[team], p, 'goalAssist');
+        break;
+      case 'cp_receive':
+        bump(stats[team], p, 'cpReceive');
+        break;
+      case 'intercept':
+        bump(stats[team], p, 'intercept');
+        break;
+      case 'deflection':
+        bump(stats[team], p, p['gain'] ? 'deflectionGain' : 'deflectionNoGain');
+        break;
+      case 'pickup':
+        bump(stats[team], p, 'pickup');
+        break;
+      case 'rebound':
+        bump(stats[team], p, p['kind'] === 'off' ? 'reboundOff' : 'reboundDef');
+        break;
     }
   }
 

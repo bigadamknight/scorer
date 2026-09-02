@@ -70,6 +70,8 @@ export function SetupPage() {
   const [firstCentrePass, setFirstCentrePass] = useState<Team>('home');
   const [homeShooters, setHomeShooters] = useState<string[]>([]);
   const [awayShooters, setAwayShooters] = useState<string[]>([]);
+  const [homePlayers, setHomePlayers] = useState<string[]>([]);
+  const [awayPlayers, setAwayPlayers] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -93,6 +95,7 @@ export function SetupPage() {
           periodMinutes,
           firstCentrePass,
           shooters: { home: homeShooters, away: awayShooters },
+          players: { home: homePlayers, away: awayPlayers },
         },
       });
       navigate(`/match/${r.id}/score`);
@@ -184,6 +187,17 @@ export function SetupPage() {
           <div className="flex flex-col gap-4">
             <ShooterList label={`${home.trim() || 'Home'} shooters`} names={homeShooters} onChange={setHomeShooters} />
             <ShooterList label={`${away.trim() || 'Away'} shooters`} names={awayShooters} onChange={setAwayShooters} />
+          </div>
+        </div>
+
+        <div className="rounded-md border border-hairline bg-surface p-4">
+          <p className="mb-3 text-sm text-faint">
+            Rest of the squad (optional) — lets the stats phone attribute intercepts, feeds and the rest to a
+            player. Players can also be added mid-match from the stats screen.
+          </p>
+          <div className="flex flex-col gap-4">
+            <ShooterList label={`${home.trim() || 'Home'} squad`} names={homePlayers} onChange={setHomePlayers} />
+            <ShooterList label={`${away.trim() || 'Away'} squad`} names={awayPlayers} onChange={setAwayPlayers} />
           </div>
         </div>
 
