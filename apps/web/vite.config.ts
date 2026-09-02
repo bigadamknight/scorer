@@ -1,19 +1,29 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import wasm from 'vite-plugin-wasm'
-import path from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), wasm()],
-  optimizeDeps: {
-    exclude: ['sql.js']
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'prompt',
+      manifest: {
+        name: 'Netball Scorer',
+        short_name: 'Scorer',
+        description: 'Momentum Netball courtside scoring and stats',
+        theme_color: '#3b2a63',
+        background_color: '#f6f4fa',
+        display: 'standalone',
+        icons: [
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+        ],
+      },
+    }),
+  ],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3105',
+    },
   },
-  resolve: {
-    alias: {
-      '@scorer/schema': path.resolve(__dirname, '../../packages/schema/src'),
-      '@scorer/rules-netball': path.resolve(__dirname, '../../packages/rules-netball/src'),
-      '@scorer/ui': path.resolve(__dirname, '../../packages/ui/src')
-    }
-  }
-})
+});

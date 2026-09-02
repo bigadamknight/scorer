@@ -319,3 +319,15 @@ from the git checkout at `/var/www/apps/deployments/production/scorer`.
 Env lives in `/etc/scorer-api.env` (ACCESS_CODE, SESSION_SECRET,
 SENDGRID_API_KEY, SCORES_DIR, EMAIL_FROM). Deploy = git pull + `systemctl
 restart scorer-api`.
+
+## apps/web — rebuilt web app (2026-09-02)
+
+Vite + React + TS PWA replacing the lost-source legacy bundle. Two modes on
+separate phones against one live match: Score (clock, goals, centre pass) and
+Stats (single-team: per-shooter shooting, CP conversion, gains/turnovers,
+penalties). Both append to the match event log in apps/api (`/api/matches/*`),
+poll every 2.5s, and queue events in localStorage when offline. Reports render
+client-side and email via `/api/matches/:id/complete`.
+Dev: `yarn workspace @scorer/web dev` (port 5199, proxies /api to :3105).
+Deployed to scorer-dev.momentumnetball.co.uk (nginx root = this app's dist in
+the production/scorer checkout); prod domain still serves legacy/deployed-bundle.

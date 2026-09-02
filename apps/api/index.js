@@ -123,6 +123,120 @@ app.post('/api/match/email', async (req, res) => {
   res.json({ ok: true, emailed, saved: path.basename(file) });
 });
 
+
+// ---------------------------------------------------------------------------
+// Live matches: append-only event log per match, shared between a scoring
+// device and a stats device. One JSON file per match under MATCHES_DIR.
+const MATCHES_DIR = process.env.MATCHES_DIR || path.join(SCORES_DIR, 'matches');
+fs.mkdirSync(MATCHES_DIR, { recursive: true });
+
+const matchPath = (id) => path.join(MATCHES_DIR, `${id.replace(/[^A-Za-z0-9-]/g, '')}.json`);
+
+const loadMatch = (id) => {
+  try { return JSON.parse(fs.readFileSync(matchPath(id), 'utf8')); } catch { return null; }
+};
+const saveMatch = (m) => fs.writeFileSync(matchPath(m.id), JSON.stringify(m));
+
+const requireAuth = (req, res, next) => {
+  if (!validToken(getToken(req))) return res.status(401).json({ error: 'Not authenticated' });
+  next();
+};
+
+app.post('/api/matches', requireAuth, (req, res) => {
+  const config = (req.body || {}).config;
+  if (!config || !config.home || !config.away) return res.status(400).json({ error: 'config.home and config.away are required' });
+  const id = `M-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+  const m = { id, createdAt: new Date().toISOString(), status: 'active', config, seq: 0, events: [] };
+  saveMatch(m);
+  res.json({ id: m.id });
+});
+
+app.get('/api/matches', requireAuth, (req, res) => {
+  const status = req.query.status;
+  const out = [];
+  for (const f of fs.readdirSync(MATCHES_DIR)) {
+    if (!f.endsWith('.json')) continue;
+    try {
+      const m = JSON.parse(fs.readFileSync(path.join(MATCHES_DIR, f), 'utf8'));
+      if (status && m.status !== status) continue;
+      out.push({ id: m.id, createdAt: m.createdAt, status: m.status, config: m.config, seq: m.seq });
+    } catch {}
+  }
+  out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  res.json({ matches: out.slice(0, 50) });
+});
+
+app.get('/api/matches/:id', requireAuth, (req, res) => {
+  const m = loadMatch(req.params.id);
+  if (!m) return res.status(404).json({ error: 'Match not found' });
+  res.json(m);
+});
+
+app.get('/api/matches/:id/events', requireAuth, (req, res) => {
+  const m = loadMatch(req.params.id);
+  if (!m) return res.status(404).json({ error: 'Match not found' });
+  const since = Number(req.query.since || 0);
+  res.json({ seq: m.seq, status: m.status, events: m.events.filter((e) => e.seq > since) });
+});
+
+app.post('/api/matches/:id/events', requireAuth, (req, res) => {
+  const m = loadMatch(req.params.id);
+  if (!m) return res.status(404).json({ error: 'Match not found' });
+  if (m.status !== 'active') return res.status(409).json({ error: 'Match is not active' });
+  const incoming = (req.body || {}).events;
+  if (!Array.isArray(incoming) || incoming.length === 0) return res.status(400).json({ error: 'events array required' });
+  for (const e of incoming.slice(0, 100)) {
+    // idempotency: skip client ids we already have
+    if (e.clientId && m.events.some((x) => x.clientId === e.clientId)) continue;
+    m.seq += 1;
+    m.events.push({ seq: m.seq, clientId: e.clientId || null, ts: new Date().toISOString(),
+                    device: String(e.device || ''), type: String(e.type || 'note'), payload: e.payload || {} });
+  }
+  saveMatch(m);
+  res.json({ seq: m.seq });
+});
+
+app.post('/api/matches/:id/complete', requireAuth, async (req, res) => {
+  const m = loadMatch(req.params.id);
+  if (!m) return res.status(404).json({ error: 'Match not found' });
+  m.status = 'completed';
+  m.completedAt = new Date().toISOString();
+  saveMatch(m);
+  // Best-effort email of the client-rendered summary, same shape as /api/match/email.
+  const body = req.body || {};
+  let emailed = false;
+  if (SENDGRID_API_KEY && body.text) {
+    try {
+      const resp = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${SENDGRID_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: EMAIL_TO_ALLOWLIST[0] }] }],
+          from: { email: EMAIL_FROM, name: 'Netball Scorer' },
+          subject: body.subject || `Match report: ${m.config.home} v ${m.config.away}`,
+          content: [{ type: 'text/plain', value: String(body.text) }],
+        }),
+      });
+      emailed = resp.ok;
+      if (!resp.ok) console.error('SendGrid error:', resp.status, await resp.text());
+    } catch (err) { console.error('Email send failed:', err); }
+  }
+  // Best-effort push to Momentum Sports Technology (system of record).
+  let mstPushed = false;
+  if (process.env.MST_API_URL && process.env.MST_API_TOKEN && body.mst) {
+    try {
+      const resp = await fetch(`${process.env.MST_API_URL}/matches`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.MST_API_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body.mst),
+      });
+      mstPushed = resp.ok;
+      if (!resp.ok) console.error('MST push error:', resp.status, await resp.text());
+    } catch (err) { console.error('MST push failed:', err); }
+  }
+  res.json({ ok: true, emailed, mstPushed });
+});
+
 app.listen(PORT, '127.0.0.1', () => {
   console.log(`scorer-api listening on 127.0.0.1:${PORT}, scores in ${SCORES_DIR}`);
 });

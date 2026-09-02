@@ -1,3 +1,32 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-ground text-ink font-body antialiased;
+  }
+}
+
+@layer components {
+  /* Big courtside tap targets — pressed state shrinks slightly for tactile feedback */
+  .tap {
+    @apply select-none rounded-md font-display uppercase tracking-wide transition-transform duration-75 active:scale-95;
+    touch-action: manipulation;
+  }
+  .field {
+    @apply w-full rounded-md border border-hairline bg-surface px-3 py-2.5 text-base outline-none focus:border-violet focus:ring-2 focus:ring-violet-wash;
+  }
+  .label {
+    @apply mb-1 block text-xs font-bold uppercase tracking-widest text-faint;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tap {
+    transition: none;
+  }
+}
