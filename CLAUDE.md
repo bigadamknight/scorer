@@ -117,7 +117,7 @@ One section lives in `.claude/rules/`. Each rule file starts with `paths:` front
 
 | Rule file | Loads when you touch | Covers |
 |---|---|---|
-| `old-server-deploy.md` | `.github/workflows/ci-cd.yml`, `setup-github-secrets.sh` | Server Development & Deployment Guide: the GitHub Actions deploy and the server layout it expects. A push to `main` starts the `deploy-prod` job, which logs in to the server and runs `git reset --hard origin/main` and `rsync -av --delete dist/ /var/www/apps/scorer-prod/`; a push to `dev` does the same into `scorer-dev`. A push that should not deploy carries `[skip ci]` in its head commit message. |
+| `old-server-deploy.md` | `.github/workflows/ci-cd.yml`, `setup-github-secrets.sh` | Server Development & Deployment Guide: the GitHub Actions deploy and the server layout it expects. The workflow is disabled in GitHub since 2026-11-19 (Adam, ask-2680), so a push starts nothing. Do not enable it as it is: on a push to `main` its `deploy-prod` job logs in to the server and runs `git reset --hard origin/main` and `rsync -av --delete dist/ /var/www/apps/scorer-prod/`, and a push to `dev` does the same into `scorer-dev`. |
 
 ## apps/api — production backend for the deployed web app (added 2026-09-01)
 
